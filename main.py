@@ -46,7 +46,7 @@ class TXThread(QtCore.QThread):
 class SpectrumAnalyzer(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("USRP Wideband Spectrum Analyzer (Live Mode)")
+        self.setWindowTitle("USRP Wideband Spectrum Analyzer")
 
         # TX-параметры
         self.tx_enabled = False
@@ -65,8 +65,8 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
 
         # Основной спектральный график (RX)
         self.graph_plot = pg.PlotWidget(title="Спектр в dBm")
-        self.graph_plot.setLabel('left', 'Мощность', units='dBm')
-        self.graph_plot.setLabel('bottom', 'Частота', units='MHz')
+        self.graph_plot.setLabel('left', 'Power', units='dBm')
+        self.graph_plot.setLabel('bottom', 'Frequency', units='MHz')
         self.graph_plot.getAxis('bottom').enableAutoSIPrefix(False)
         self.curve = self.graph_plot.plot(pen='y')  # нормальный (RX) спектр, желтый
         self.curve.setDownsampling(auto=False)
@@ -93,9 +93,9 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
         self.graph_plot.addItem(self.max_text)
 
         # График водопада (RX)
-        self.waterfall_plot = pg.PlotWidget(title="Водопад")
-        self.waterfall_plot.setLabel('bottom', 'Частота', units='MHz')
-        self.waterfall_plot.setLabel('left', 'Скан')
+        self.waterfall_plot = pg.PlotWidget(title="Waterfall")
+        self.waterfall_plot.setLabel('bottom', 'Frequency', units='MHz')
+        self.waterfall_plot.setLabel('left', 'Scan')
         self.waterfall_plot.getAxis('bottom').enableAutoSIPrefix(False)
         self.waterfall_img = pg.ImageItem()
         self.waterfall_img.setOpts(invertY=False, axisOrder='row-major')
@@ -112,32 +112,35 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
         control_panel = QtWidgets.QWidget()
         control_layout = QtWidgets.QFormLayout(control_panel)
         # Настройки для приемного канала (RX)
-        self.start_freq_edit = QtWidgets.QLineEdit("100")  # MHz
+        self.start_freq_edit = QtWidgets.QLineEdit("70")  # MHz
         self.stop_freq_edit = QtWidgets.QLineEdit("6000")  # MHz
-        self.step_edit = QtWidgets.QLineEdit("60")  # MHz
-        control_layout.addRow("Начальная (MHz):", self.start_freq_edit)
-        control_layout.addRow("Конечная (MHz):", self.stop_freq_edit)
-        control_layout.addRow("Шаг (MHz):", self.step_edit)
+        self.step_edit = QtWidgets.QLineEdit("56")  # MHz
+        control_layout.addRow("Start (MHz):", self.start_freq_edit)
+        control_layout.addRow("Stop (MHz):", self.stop_freq_edit)
+        control_layout.addRow("Step (MHz):", self.step_edit)
 
         self.samples_combo = QtWidgets.QComboBox()
         for v in [512, 1024, 2048, 4096, 8192, 16384, 32768, 65536]:
             self.samples_combo.addItem(str(v))
         self.samples_combo.setCurrentText("4096")
-        control_layout.addRow("Сэмплов:", self.samples_combo)
+        control_layout.addRow("FFT size:", self.samples_combo)
+
+        # self.samp_rate_edit = QtWidgets.QLineEdit("56")  # MHz
+        # control_layout.addRow("Samp_rate:", self.start_freq_edit)
 
         self.gain_spin = QtWidgets.QSpinBox()
         self.gain_spin.setRange(0, 60)
-        self.gain_spin.setValue(40)
+        self.gain_spin.setValue(30)
         control_layout.addRow("Gain:", self.gain_spin)
 
         self.waterfall_lines_spin = QtWidgets.QSpinBox()
-        self.waterfall_lines_spin.setRange(50, 2000)
+        self.waterfall_lines_spin.setRange(10, 2000)
         self.waterfall_lines_spin.setValue(200)
-        control_layout.addRow("Строк водопада:", self.waterfall_lines_spin)
+        control_layout.addRow("Waterfall size:", self.waterfall_lines_spin)
 
-        self.scan_button = QtWidgets.QPushButton("Начать сканирование")
+        self.scan_button = QtWidgets.QPushButton("Start scanning")
         control_layout.addRow(self.scan_button)
-        self.maxhold_button = QtWidgets.QPushButton("Max Hold Вкл.")
+        self.maxhold_button = QtWidgets.QPushButton("Turn Max Hold On")
         control_layout.addRow(self.maxhold_button)
 
         # Разделительная линия для настройки передатчика (TX)
@@ -148,15 +151,15 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
 
         # Настройки передающего канала
         self.tx_freq_edit = QtWidgets.QLineEdit("2400")  # MHz – значение по умолчанию
-        control_layout.addRow("Tx Частота (MHz):", self.tx_freq_edit)
+        control_layout.addRow("Tx Frequency (MHz):", self.tx_freq_edit)
         self.tx_gain_spin = QtWidgets.QSpinBox()
         self.tx_gain_spin.setRange(0, 60)
-        self.tx_gain_spin.setValue(40)
+        self.tx_gain_spin.setValue(30)
         control_layout.addRow("Gain Tx:", self.tx_gain_spin)
-        self.tx_start_button = QtWidgets.QPushButton("Начать передачу")
+        self.tx_start_button = QtWidgets.QPushButton("Start trasmission")
         control_layout.addRow(self.tx_start_button)
         self.tx_status_label = QtWidgets.QLabel("")
-        control_layout.addRow("Статус:", self.tx_status_label)
+        control_layout.addRow("Status:", self.tx_status_label)
 
         # Разделительная линия для настройки sweep режима
         separator_sweep = QtWidgets.QFrame()
@@ -169,20 +172,20 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
         self.sweep_stop_edit = QtWidgets.QLineEdit("2000")  # MHz
         self.sweep_step_edit = QtWidgets.QLineEdit("10")  # MHz
         self.sweep_dwell_edit = QtWidgets.QLineEdit("100")  # ms
-        control_layout.addRow("Sweep начальная (MHz):", self.sweep_start_edit)
-        control_layout.addRow("Sweep конечная (MHz):", self.sweep_stop_edit)
-        control_layout.addRow("Sweep шаг (MHz):", self.sweep_step_edit)
-        control_layout.addRow("Время на шаге (ms):", self.sweep_dwell_edit)
+        control_layout.addRow("Sweep start (MHz):", self.sweep_start_edit)
+        control_layout.addRow("Sweep stop (MHz):", self.sweep_stop_edit)
+        control_layout.addRow("Sweep step (MHz):", self.sweep_step_edit)
+        control_layout.addRow("Time at each step (ms):", self.sweep_dwell_edit)
 
         self.sweep_gain_spin = QtWidgets.QSpinBox()
         self.sweep_gain_spin.setRange(0, 60)
-        self.sweep_gain_spin.setValue(40)
+        self.sweep_gain_spin.setValue(30)
         control_layout.addRow("Gain Sweep:", self.sweep_gain_spin)
 
-        self.sweep_start_button = QtWidgets.QPushButton("Начать Sweep")
+        self.sweep_start_button = QtWidgets.QPushButton("Start Sweep")
         control_layout.addRow(self.sweep_start_button)
         self.sweep_status_label = QtWidgets.QLabel("")
-        control_layout.addRow("Статус Sweep:", self.sweep_status_label)
+        control_layout.addRow("Status Sweep:", self.sweep_status_label)
 
         main_layout.addWidget(control_panel, stretch=1)
 
@@ -193,7 +196,7 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
         self.sweep_start_button.clicked.connect(self.toggle_sweep_transmission)
 
         # Параметры сканирования и водопада (RX)
-        self.sample_rate = 60e6  # Гц
+        self.sample_rate = float(self.step_edit.text())*1000000  # Гц
         self.num_samples = 4096  # значение по умолчанию (пересчитывается из samples_combo)
         self.waterfall_history = 200  # обновляется из waterfall_lines_spin при старте
         self.waterfall_data = np.full((self.waterfall_history, self.num_samples), -140.0)
@@ -213,19 +216,14 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
         self.sweep_timer.timeout.connect(self.next_sweep_step)
         self.current_sweep_freq = None
         self.sweep_freqs = []
-
         self.live_scanning = False
-
-        self.init_usrp()
-
-        self.live_scanning = False
-
         self.init_usrp()
 
     def init_usrp(self):
         self.usrp = uhd.usrp.MultiUSRP()
+        channel = 0
         self.center_freq = 1000e6  # начальное значение (RX)
-        self.gain = 40
+        self.gain = 30
         self.usrp.set_rx_rate(self.sample_rate)
         self.usrp.set_rx_freq(self.center_freq)
         self.usrp.set_rx_gain(self.gain)
@@ -252,7 +250,7 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
     def toggle_live_scanning(self):
         if self.live_scanning:
             self.live_scanning = False
-            self.scan_button.setText("Начать сканирование")
+            self.scan_button.setText("Start scanning")
         else:
             self.num_samples = int(self.samples_combo.currentText())
             self.buffer = np.zeros(self.num_samples, dtype=np.complex64)
@@ -265,7 +263,7 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
             self.usrp.set_rx_gain(self.gain)
 
             self.live_scanning = True
-            self.scan_button.setText("Пауза")
+            self.scan_button.setText("Pause")
             self.init_live_scan_parameters()
             self.composite_scan_cycle()
 
@@ -275,9 +273,9 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
             stop_mhz = float(self.stop_freq_edit.text())
             step_mhz = float(self.step_edit.text())
         except ValueError:
-            QtWidgets.QMessageBox.warning(self, "Ошибка", "Введите корректные числовые значения!")
+            QtWidgets.QMessageBox.warning(self, "Error", "Enter a valid number")
             self.live_scanning = False
-            self.scan_button.setText("Начать сканирование")
+            self.scan_button.setText("Start scanning")
             return
         start_hz = start_mhz * 1e6
         stop_hz = stop_mhz * 1e6
@@ -346,11 +344,11 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
     def toggle_maxhold(self):
         self.maxhold_enabled = not self.maxhold_enabled
         if self.maxhold_enabled:
-            self.maxhold_button.setText("Max Hold Выкл.")
+            self.maxhold_button.setText("Turn Max Hold off")
             if self.common_freq is not None:
                 self.maxhold_data_arr = self.composite_spectrum.copy()
         else:
-            self.maxhold_button.setText("Max Hold Вкл.")
+            self.maxhold_button.setText("Turn Max Hold on")
             self.maxhold_curve.clear()
 
     def start_transmission(self):
@@ -358,7 +356,7 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
             try:
                 tx_freq = float(self.tx_freq_edit.text()) * 1e6  # перевод в Гц
             except ValueError:
-                QtWidgets.QMessageBox.warning(self, "Ошибка", "Введите корректное значение Tx Частоты!")
+                QtWidgets.QMessageBox.warning(self, "Error", "Enter a valid number")
                 return
             tx_gain = self.tx_gain_spin.value()
             self.usrp.set_tx_freq(tx_freq)
@@ -374,14 +372,14 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
             self.tx_thread = TXThread(self.tx_stream, self.tx_buffer)
             self.tx_thread.start()
             self.tx_enabled = True
-            self.tx_start_button.setText("Пауза передачу")
-            self.tx_status_label.setText(f"Передача на {tx_freq / 1e6:.2f} MHz, Gain Tx {tx_gain}")
+            self.tx_start_button.setText("Pause transmission")
+            self.tx_status_label.setText(f"Transmission at {tx_freq / 1e6:.2f} MHz, Gain Tx {tx_gain}")
         else:
             self.tx_enabled = False
             if self.tx_thread is not None:
                 self.tx_thread.stop()
-            self.tx_start_button.setText("Начать передачу")
-            self.tx_status_label.setText("Передача остановлена")
+            self.tx_start_button.setText("Start transmission")
+            self.tx_status_label.setText("Transmission stopped")
 
     def toggle_sweep_transmission(self):
         if not self.sweep_enabled:
@@ -392,11 +390,11 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
                 step_freq = float(self.sweep_step_edit.text()) * 1e6  # MHz -> Hz
                 dwell_time = float(self.sweep_dwell_edit.text())  # ms
             except ValueError:
-                QtWidgets.QMessageBox.warning(self, "Ошибка", "Введите корректные числовые значения!")
+                QtWidgets.QMessageBox.warning(self, "Error", "Enter a valid number")
                 return
 
             if step_freq <= 0:
-                QtWidgets.QMessageBox.warning(self, "Ошибка", "Шаг частоты должен быть положительным!")
+                QtWidgets.QMessageBox.warning(self, "Error", "Enter a valid number")
                 return
 
             # Генерируем список частот для sweep
@@ -406,7 +404,7 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
                 self.sweep_freqs = np.arange(start_freq, stop_freq - step_freq, -step_freq)
 
             if len(self.sweep_freqs) == 0:
-                QtWidgets.QMessageBox.warning(self, "Ошибка", "Неверные параметры sweep!")
+                QtWidgets.QMessageBox.warning(self, "Error", "Incorrect sweeps parameters")
                 return
 
             # Устанавливаем параметры передачи
@@ -431,8 +429,8 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
             self.sweep_enabled = True
             self.current_sweep_freq = 0
             self.sweep_timer.start(int(dwell_time))  # Преобразуем в int
-            self.sweep_start_button.setText("Остановить Sweep")
-            self.sweep_status_label.setText(f"Передача в режиме sweep... {self.sweep_freqs[0] / 1e6:.2f} MHz")
+            self.sweep_start_button.setText("Stop sweep")
+            self.sweep_status_label.setText(f"Sweep transmission... {self.sweep_freqs[0] / 1e6:.2f} MHz")
 
             # Устанавливаем первую частоту
             self.usrp.set_tx_freq(self.sweep_freqs[0])
@@ -440,8 +438,8 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
             # Останавливаем sweep передачу
             self.sweep_enabled = False
             self.sweep_timer.stop()
-            self.sweep_start_button.setText("Начать Sweep")
-            self.sweep_status_label.setText("Sweep остановлен")
+            self.sweep_start_button.setText("Start sweep")
+            self.sweep_status_label.setText("Sweep stopped")
 
             # Останавливаем поток TX, если нет других активных передач
             if not self.tx_enabled and self.tx_thread is not None:
@@ -457,7 +455,7 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
 
         freq = self.sweep_freqs[self.current_sweep_freq]
         self.usrp.set_tx_freq(freq)
-        self.sweep_status_label.setText(f"Передача в режиме sweep... {freq / 1e6:.2f} MHz")
+        self.sweep_status_label.setText(f"Sweep transmission... {freq / 1e6:.2f} MHz")
 
     def on_mouse_moved(self, evt):
         pos = evt[0]
