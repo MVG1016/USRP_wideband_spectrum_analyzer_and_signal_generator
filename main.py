@@ -168,8 +168,8 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
         control_layout.addRow(separator_sweep)
 
         # Настройки sweep режима
-        self.sweep_start_edit = QtWidgets.QLineEdit("1000")  # MHz
-        self.sweep_stop_edit = QtWidgets.QLineEdit("2000")  # MHz
+        self.sweep_start_edit = QtWidgets.QLineEdit("2300")  # MHz
+        self.sweep_stop_edit = QtWidgets.QLineEdit("2500")  # MHz
         self.sweep_step_edit = QtWidgets.QLineEdit("10")  # MHz
         self.sweep_dwell_edit = QtWidgets.QLineEdit("100")  # ms
         control_layout.addRow("Sweep start (MHz):", self.sweep_start_edit)
