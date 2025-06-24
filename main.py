@@ -64,7 +64,7 @@ class SpectrumAnalyzer(QtWidgets.QMainWindow):
         graph_layout = QtWidgets.QVBoxLayout(graph_container)
 
         # Основной спектральный график (RX)
-        self.graph_plot = pg.PlotWidget(title="Спектр в dBm")
+        self.graph_plot = pg.PlotWidget(title="Spectrum in dBm")
         self.graph_plot.setLabel('left', 'Power', units='dBm')
         self.graph_plot.setLabel('bottom', 'Frequency', units='MHz')
         self.graph_plot.getAxis('bottom').enableAutoSIPrefix(False)
